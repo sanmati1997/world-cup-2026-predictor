@@ -56,14 +56,6 @@ with tab1:
     t1 = c1.selectbox("Team A", teams, index=teams.index("Spain") if "Spain" in teams else 0)
     t2 = c2.selectbox("Team B", teams, index=teams.index("Brazil") if "Brazil" in teams else 1)
 
-    venue = st.radio(
-        "Venue",
-        [f"Neutral (most World Cup games)", f"{t1} at home", f"{t2} at home"],
-        horizontal=True,
-        help="World Cup matches are neutral except for the host nations (USA, Canada, Mexico) "
-             "playing at home. 'At home' adds the home-advantage boost to that team.",
-    )
-
     with st.expander("Injuries / missing players (the before-vs-after knob)"):
         st.caption("Drop a team's strength when key players are out, then watch the odds shift.")
         adj1 = st.slider(f"{t1} available strength", 0.70, 1.00, 1.00, 0.01)
@@ -72,30 +64,21 @@ with tab1:
     if t1 == t2:
         st.warning("Pick two different teams.")
     else:
-        # order teams so the home side (if any) is passed as 'home' to the model
-        if venue == f"{t2} at home":
-            H, A, neutral, hA, aA = t2, t1, False, adj2, adj1
-        else:
-            H, A, neutral, hA, aA = t1, t2, venue.startswith("Neutral"), adj1, adj2
-
-        r = model.predict(params, H, A, neutral=neutral, home_adj=hA, away_adj=aA)
+        r = model.predict(params, t1, t2, neutral=True, home_adj=adj1, away_adj=adj2)
         m1, m2, m3 = st.columns(3)
-        m1.metric(f"{H} win", f"{r['p_home']:.0%}")
+        m1.metric(f"{t1} win", f"{r['p_home']:.0%}")
         m2.metric("Draw", f"{r['p_draw']:.0%}")
-        m3.metric(f"{A} win", f"{r['p_away']:.0%}")
+        m3.metric(f"{t2} win", f"{r['p_away']:.0%}")
         st.bar_chart(pd.DataFrame(
-            {"probability": {f"{H} win": r["p_home"], "Draw": r["p_draw"], f"{A} win": r["p_away"]}}))
-        st.write(f"**Expected goals:** {H} {r['exp_home_goals']:.2f} - {r['exp_away_goals']:.2f} {A}")
+            {"probability": {f"{t1} win": r["p_home"], "Draw": r["p_draw"], f"{t2} win": r["p_away"]}}))
+        st.write(f"**Expected goals:** {t1} {r['exp_home_goals']:.2f} - {r['exp_away_goals']:.2f} {t2}")
         st.write("**Likely scores:** " + ",  ".join(f"`{s}` {p:.0%}" for s, p in r["top_scores"][:4]))
 
-        ex = model.explain(params, H, A, neutral=neutral, home_adj=hA, away_adj=aA)
+        ex = model.explain(params, t1, t2, neutral=True, home_adj=adj1, away_adj=adj2)
         st.info("**Why:** " + ex["why"])
         with st.expander("The drivers behind this (no black box)"):
             for d in ex["drivers"]:
                 st.write("- " + d)
-        if not neutral:
-            st.caption(f"Home advantage applied to {H}. Most World Cup matches are neutral; "
-                       f"this matters mainly for host nations.")
 
 with tab2:
     st.caption("Every upcoming World Cup 2026 fixture in the dataset, predicted.")
