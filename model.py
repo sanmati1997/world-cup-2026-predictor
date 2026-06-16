@@ -167,10 +167,10 @@ def explain(params, home, away, neutral=True, home_adj=1.0, away_adj=1.0):
         f"{away} {pct(a[away], atts)}th pct ({tier(pct(a[away], atts))})",
         f"Defense: {home} {pct(dfn[home], defs)}th pct ({tier(pct(dfn[home], defs))}), "
         f"{away} {pct(dfn[away], defs)}th pct ({tier(pct(dfn[away], defs))})",
-        ("Neutral venue (no home advantage)" if neutral
-         else f"Home advantage applied (+{params['home_adv']:.2f} to {home})"),
         f"Expected goals: {home} {r['exp_home_goals']:.2f} vs {away} {r['exp_away_goals']:.2f}",
     ]
+    if not neutral:
+        drivers.insert(2, f"Home advantage applied (+{params['home_adv']:.2f} to {home})")
     if home_adj != 1.0 or away_adj != 1.0:
         drivers.append(f"Injury adjustment: {home} x{home_adj:.2f}, {away} x{away_adj:.2f}")
 
