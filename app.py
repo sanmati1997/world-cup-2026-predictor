@@ -56,15 +56,10 @@ with tab1:
     t1 = c1.selectbox("Team A", teams, index=teams.index("Spain") if "Spain" in teams else 0)
     t2 = c2.selectbox("Team B", teams, index=teams.index("Brazil") if "Brazil" in teams else 1)
 
-    with st.expander("Injuries / missing players (the before-vs-after knob)"):
-        st.caption("Drop a team's strength when key players are out, then watch the odds shift.")
-        adj1 = st.slider(f"{t1} available strength", 0.70, 1.00, 1.00, 0.01)
-        adj2 = st.slider(f"{t2} available strength", 0.70, 1.00, 1.00, 0.01)
-
     if t1 == t2:
         st.warning("Pick two different teams.")
     else:
-        r = model.predict(params, t1, t2, neutral=True, home_adj=adj1, away_adj=adj2)
+        r = model.predict(params, t1, t2, neutral=True)
         m1, m2, m3 = st.columns(3)
         m1.metric(f"{t1} win", f"{r['p_home']:.0%}")
         m2.metric("Draw", f"{r['p_draw']:.0%}")
@@ -74,7 +69,7 @@ with tab1:
         st.write(f"**Expected goals:** {t1} {r['exp_home_goals']:.2f} - {r['exp_away_goals']:.2f} {t2}")
         st.write("**Likely scores:** " + ",  ".join(f"`{s}` {p:.0%}" for s, p in r["top_scores"][:4]))
 
-        ex = model.explain(params, t1, t2, neutral=True, home_adj=adj1, away_adj=adj2)
+        ex = model.explain(params, t1, t2, neutral=True)
         st.info("**Why:** " + ex["why"])
         with st.expander("The drivers behind this (no black box)"):
             for d in ex["drivers"]:
@@ -87,11 +82,11 @@ with tab2:
 with tab3:
     st.markdown(
         "**Model:** Dixon-Coles bivariate Poisson. Each team has an attack and a defense "
-        "rating learned from international results since 2014 (recent matches weigh more). "
+        "rating learned from international results since 2018 (recent matches weigh more). "
         "For a match it builds a full scoreline matrix, so win/draw/loss, expected goals, "
         "and likely scores all come from one model, and **draws are handled structurally**.\n\n"
-        "**Honesty:** on a leakage-free backtest (3,266 matches) it scores **log-loss 0.865 vs "
-        "1.056** for a no-skill baseline and is **well-calibrated** (when it says 70%, it happens "
+        "**Honesty:** on a leakage-free backtest (3,103 matches) it scores **log-loss 0.874 vs "
+        "1.058** for a no-skill baseline and is **well-calibrated** (when it says 70%, it happens "
         "~70%). Outcome accuracy is ~59% - capped by football's randomness, like any model or "
         "bookmaker. The value is trustworthy probabilities over many games, **not a crystal ball "
         "for any single match. Not betting advice.**")

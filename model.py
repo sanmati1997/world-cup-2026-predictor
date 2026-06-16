@@ -47,7 +47,7 @@ def _tau(hs, as_, lh, la, rho):
     return np.clip(t, 1e-9, None)
 
 
-def fit(played, since="2014-01-01", half_life_years=2.0, min_matches=15):
+def fit(played, since="2018-01-01", half_life_years=2.0, min_matches=15):
     """Fit the Dixon-Coles model. Returns a params dict."""
     d = played[played["date"] >= pd.Timestamp(since)].copy()
 

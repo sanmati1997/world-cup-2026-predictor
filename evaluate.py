@@ -39,7 +39,7 @@ def main():
     train = played[played["date"] < cut]
     test = played[played["date"] >= cut]
 
-    params = model.fit(train, since="2014-01-01")
+    params = model.fit(train, since="2018-01-01")
     known = set(params["teams"])
 
     # no-skill baseline = base rates of H/D/A in the training set

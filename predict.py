@@ -24,7 +24,7 @@ import model
 CACHE = "data_cache/model.pkl"
 
 
-def get_params(refit=False, since="2014-01-01"):
+def get_params(refit=False, since="2018-01-01"):
     if not refit and os.path.exists(CACHE):
         with open(CACHE, "rb") as f:
             return pickle.load(f)

@@ -25,27 +25,26 @@ python predict.py "Spain" "Brazil"
 
 1. **Goals model, not a classifier.** Dixon-Coles models goals, so it produces full scorelines and expected goals, and **draws fall out of the score matrix** (the diagonal) instead of being under-predicted by a 3-class classifier.
 2. **Honest calibration.** The headline isn't accuracy, it's whether the probabilities are *trustworthy*. Measured below.
-3. **Injury / lineup hook ("before vs after").** `--home-adj` / `--away-adj` scale a team's attack when key players are out. Rerun when the lineup drops to update the odds.
-4. **No black box.** Every team has an interpretable attack and defense rating; the only "hyperparameters" are home advantage, the low-score correction, and a time-decay.
+3. **No black box.** Every team has an interpretable attack and defense rating, and the prediction shows *why* the favorite is favored (attack/defense percentiles, expected goals). The only "hyperparameters" are home advantage, the low-score correction, and a time-decay.
 
 ## Results (leakage-free backtest)
 
-Trained only on matches **before** the cutoff, tested on **3,266** played matches after it (`python evaluate.py --cutoff 2023-06-01`):
+Trained only on matches **before** the cutoff, tested on **3,103** played matches after it (`python evaluate.py --cutoff 2023-06-01`):
 
 | metric | model | no-skill baseline |
 |---|---|---|
-| **log-loss** | **0.865** | 1.056 |
-| **Brier** | **0.509** | 0.637 |
-| outcome accuracy | 59.3% | (ceiling-bound) |
+| **log-loss** | **0.874** | 1.058 |
+| **Brier** | **0.514** | 0.639 |
+| outcome accuracy | 58.7% | (ceiling-bound) |
 
 **Calibration** (when it says X%, does it happen X%?):
 
 | predicted home-win | observed |
 |---|---|
-| 25% | 27% |
-| 45% | 47% |
+| 25% | 26% |
+| 45% | 44% |
 | 55% | 51% |
-| 75% | 78% |
+| 75% | 75% |
 | 95% | 93% |
 
 The probabilities track reality closely across the whole range. That is the point: a calibrated model you can trust over many games, not a crystal ball for any single one. **Outcome accuracy (~59%) is comparable to a classifier and to bookmakers** because football has an information ceiling - the edge shows up in log-loss, Brier, and calibration, not in winner-picking.
@@ -55,12 +54,6 @@ The probabilities track reality closely across the whole range. That is the poin
 ```
 # one match
 python predict.py "Argentina" "Saudi Arabia"
-
-# host plays at home (non-neutral)
-python predict.py "United States" "Mexico" --host "United States"
-
-# injuries: key attackers out -> attack scaled to 85%
-python predict.py "Brazil" "Croatia" --home-adj 0.85
 
 # every upcoming World Cup 2026 fixture -> predictions/wc2026.csv
 python predict_all.py
@@ -78,13 +71,13 @@ home goals ~ Poisson(exp(a_home - d_away + h))
 away goals ~ Poisson(exp(a_away - d_home))
 ```
 
-Parameters are fit by maximum likelihood over international results since 2014, with **exponential time decay** (recent matches weigh more) and the **Dixon-Coles low-score correction** for the 0-0/1-0/0-1/1-1 dependence. The scoreline matrix is summed to get win/draw/loss.
+Parameters are fit by maximum likelihood over international results since 2018, with **exponential time decay** (recent matches weigh more) and the **Dixon-Coles low-score correction** for the 0-0/1-0/0-1/1-1 dependence. The scoreline matrix is summed to get win/draw/loss.
 
 ## Honest limitations
 
 - **Outcome accuracy is capped** (~55-60%) by football's randomness. No model beats that by much; treat single-match calls with humility.
 - **Beating the betting market is the real bar**, and this does not claim to. It claims to be well-calibrated and clearly better than no-skill.
-- **The injury adjustment is a manual heuristic** for now (a strength multiplier). Player-level auto-weighting from squad data (market value / ratings) is the natural next layer.
+- **Team-level only.** It rates teams, not the specific players on the pitch, so it has no notion of injuries, suspensions, or lineups. Player-level / injury adjustment is the natural next layer (it needs live squad data).
 - **Low-data teams** (debutants, small nations) have less reliable ratings; a minimum-match filter and time-decay mitigate but do not remove this.
 - Slice/team-level only; no xG, lineups, or tactics yet.
 
