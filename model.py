@@ -143,3 +143,51 @@ def predict(params, home, away, neutral=True, max_goals=10,
         "exp_home_goals": float(lh), "exp_away_goals": float(la),
         "top_scores": [(f"{x}-{y}", float(p)) for (x, y), p in top],
     }
+
+
+def explain(params, home, away, neutral=True, home_adj=1.0, away_adj=1.0):
+    """Why is the favorite favored? Returns the interpretable drivers behind the
+    prediction, straight from the model's attack/defense ratings (no black box)."""
+    a, dfn = params["attack"], params["defense"]
+    atts = np.array(list(a.values()))
+    defs = np.array(list(dfn.values()))
+    pct = lambda v, arr: int(round(float((arr < v).mean()) * 100))
+
+    r = predict(params, home, away, neutral, home_adj=home_adj, away_adj=away_adj)
+    fav, dog = (home, away) if r["p_home"] >= r["p_away"] else (away, home)
+    fav_p = max(r["p_home"], r["p_away"])
+
+    def tier(p):
+        return ("elite (top 5%)" if p >= 95 else "strong" if p >= 80 else
+                "above average" if p >= 60 else "average" if p >= 40 else
+                "below average" if p >= 20 else "weak")
+
+    drivers = [
+        f"Attack: {home} {pct(a[home], atts)}th pct ({tier(pct(a[home], atts))}), "
+        f"{away} {pct(a[away], atts)}th pct ({tier(pct(a[away], atts))})",
+        f"Defense: {home} {pct(dfn[home], defs)}th pct ({tier(pct(dfn[home], defs))}), "
+        f"{away} {pct(dfn[away], defs)}th pct ({tier(pct(dfn[away], defs))})",
+        ("Neutral venue (no home advantage)" if neutral
+         else f"Home advantage applied (+{params['home_adv']:.2f} to {home})"),
+        f"Expected goals: {home} {r['exp_home_goals']:.2f} vs {away} {r['exp_away_goals']:.2f}",
+    ]
+    if home_adj != 1.0 or away_adj != 1.0:
+        drivers.append(f"Injury adjustment: {home} x{home_adj:.2f}, {away} x{away_adj:.2f}")
+
+    # plain-English "why"
+    reasons = []
+    if pct(a[fav], atts) - pct(a[dog], atts) >= 10:
+        reasons.append("a clearly stronger attack")
+    if pct(dfn[fav], defs) - pct(dfn[dog], defs) >= 10:
+        reasons.append("a more solid defense")
+    if not neutral and fav == home:
+        reasons.append("home advantage")
+    if not reasons:
+        reasons.append("a small overall edge in expected goals")
+    fav_xg = r["exp_home_goals"] if fav == home else r["exp_away_goals"]
+    dog_xg = r["exp_away_goals"] if fav == home else r["exp_home_goals"]
+    why = (f"{fav} is favored ({fav_p:.0%}) on " + " and ".join(reasons) +
+           f", outscoring {dog} {fav_xg:.2f} to {dog_xg:.2f} in expected goals."
+           if fav_p - max(r['p_draw'], min(r['p_home'], r['p_away'])) > 0.05
+           else f"Close to a toss-up: {fav}'s edge is small, expect a tight game.")
+    return {"favorite": fav, "why": why, "drivers": drivers}

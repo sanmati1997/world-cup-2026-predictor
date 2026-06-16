@@ -71,6 +71,12 @@ def main():
     r = model.predict(params, args.home, args.away, neutral=neutral,
                       home_adj=args.home_adj, away_adj=args.away_adj)
     show(r)
+    ex = model.explain(params, args.home, args.away, neutral=neutral,
+                       home_adj=args.home_adj, away_adj=args.away_adj)
+    print(f"  WHY: {ex['why']}")
+    for d in ex["drivers"]:
+        print(f"    - {d}")
+    print("=" * 60)
 
 
 if __name__ == "__main__":

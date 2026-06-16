@@ -75,6 +75,12 @@ with tab1:
         st.write(f"**Expected goals:** {home} {r['exp_home_goals']:.2f} - {r['exp_away_goals']:.2f} {away}")
         st.write("**Likely scores:** " + ",  ".join(f"`{s}` {p:.0%}" for s, p in r["top_scores"][:4]))
 
+        ex = model.explain(params, home, away, neutral=neutral, home_adj=ha, away_adj=aa)
+        st.info("**Why:** " + ex["why"])
+        with st.expander("The drivers behind this (no black box)"):
+            for d in ex["drivers"]:
+                st.write("- " + d)
+
 with tab2:
     st.caption("Every upcoming World Cup 2026 fixture in the dataset, predicted.")
     st.dataframe(all_fixtures(params), use_container_width=True, hide_index=True)
