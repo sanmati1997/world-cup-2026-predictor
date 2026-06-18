@@ -1,7 +1,7 @@
 data_cache/*
 !data_cache/backtest_metrics.json
+!data_cache/model.pkl
 predictions/
-*.pkl
 __pycache__/
 *.pyc
 .DS_Store
