@@ -1,4 +1,5 @@
-data_cache/
+data_cache/*
+!data_cache/backtest_metrics.json
 predictions/
 *.pkl
 __pycache__/

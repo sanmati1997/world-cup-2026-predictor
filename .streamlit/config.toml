@@ -1,0 +1,13 @@
+# Streamlit theme for the World Cup 2026 predictor.
+# Flat, light, product style. The two team identity colors (blue, red) and the
+# heatmap ramp live in app.py so all custom styling stays in one place.
+[theme]
+base = "light"
+primaryColor = "#2563eb"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f1f5f9"
+textColor = "#0f172a"
+font = "sans serif"
+
+[server]
+headless = true

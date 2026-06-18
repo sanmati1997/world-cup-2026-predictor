@@ -191,3 +191,56 @@ def explain(params, home, away, neutral=True, home_adj=1.0, away_adj=1.0):
            if fav_p - max(r['p_draw'], min(r['p_home'], r['p_away'])) > 0.05
            else f"Close to a toss-up: {fav}'s edge is small, expect a tight game.")
     return {"favorite": fav, "why": why, "drivers": drivers}
+
+
+def score_matrix(params, home, away, neutral=True, max_goals=10,
+                 home_adj=1.0, away_adj=1.0):
+    """Read-only accessor for the full joint scoreline distribution.
+
+    Returns the same bivariate Poisson plus Dixon-Coles matrix that predict()
+    builds internally, so the UI can render it as a heatmap. M[x, y] is the
+    probability of the home side scoring x and the away side scoring y. This
+    mirrors predict()'s matrix exactly and does not alter the model.
+    """
+    a, dfn = params["attack"], params["defense"]
+    for t in (home, away):
+        if t not in a:
+            raise KeyError(f"'{t}' not in model (too few recent matches or name mismatch).")
+    ha = params["home_adv"] * (0.0 if neutral else 1.0)
+    lh = np.exp(a[home] - dfn[away] + ha) * home_adj
+    la = np.exp(a[away] - dfn[home]) * away_adj
+
+    gx = np.arange(0, max_goals + 1)
+    M = np.outer(poisson.pmf(gx, lh), poisson.pmf(gx, la))
+    rho = params["rho"]
+    M[0, 0] *= 1.0 - lh * la * rho
+    M[0, 1] *= 1.0 + lh * rho
+    M[1, 0] *= 1.0 + la * rho
+    M[1, 1] *= 1.0 - rho
+    M = np.clip(M, 0, None)
+    M /= M.sum()
+    return {"matrix": M, "exp_home_goals": float(lh), "exp_away_goals": float(la)}
+
+
+def contributions(params, home, away, neutral=True, home_adj=1.0, away_adj=1.0):
+    """Read-only: the signed factors behind the prediction, taken directly from
+    the fitted linear predictor.
+
+    Each value is in the model's log expected-goal units. Positive pushes the
+    result toward the home side, negative toward the away side. These four are
+    the only inputs the model actually uses (attack, defense, home advantage, and
+    the manual injury multiplier); together they equal the home minus away log
+    expected-goal difference. Nothing here is invented.
+    """
+    a, dfn = params["attack"], params["defense"]
+    ha = params["home_adv"] * (0.0 if neutral else 1.0)
+    out = [
+        {"factor": "Attack", "value": float(a[home] - a[away])},
+        {"factor": "Defense", "value": float(dfn[home] - dfn[away])},
+    ]
+    if not neutral:
+        out.append({"factor": "Home advantage", "value": float(ha)})
+    if home_adj != 1.0 or away_adj != 1.0:
+        out.append({"factor": "Squad availability",
+                    "value": float(np.log(home_adj) - np.log(away_adj))})
+    return out
