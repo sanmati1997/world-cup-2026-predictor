@@ -71,7 +71,7 @@ home goals ~ Poisson(exp(a_home - d_away + h))
 away goals ~ Poisson(exp(a_away - d_home))
 ```
 
-Parameters are fit by maximum likelihood over international results since 2018, with **exponential time decay** (recent matches weigh more) and the **Dixon-Coles low-score correction** for the 0-0/1-0/0-1/1-1 dependence. The scoreline matrix is summed to get win/draw/loss.
+Parameters are fit by maximum likelihood over international results from 2018 to the present (the dataset refreshes each run), with **exponential time decay** so the most recent matches weigh most, and the **Dixon-Coles low-score correction** for the 0-0/1-0/0-1/1-1 dependence. The scoreline matrix is summed to get win/draw/loss.
 
 ## Honest limitations
 

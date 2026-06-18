@@ -461,7 +461,8 @@ with tab_method:
     sec("The model")
     st.markdown(
         "Dixon-Coles bivariate Poisson. Each team has an attack and a defense rating learned "
-        "from international results since 2018, with recent matches weighted more. For a match "
+        "from international results from 2018 to the present, refreshed with the latest results "
+        "and weighted so recent matches matter most. For a match "
         "the model builds the full scoreline matrix, so win, draw, loss, expected goals, and "
         "likely scores all come from one model, and draws are handled structurally rather than "
         "bolted on.")
